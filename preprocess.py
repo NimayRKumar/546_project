@@ -8,7 +8,7 @@ import shutil
 from PIL import Image
 
 #replace with your own if using absolute paths, or empty string if not
-root = '/Users/nimay/Desktop/repos/in_the_jungle'
+data_dir = '/Users/nimay/Desktop/repos/in_the_jungle/data'
 FIG_SIZE = (15,10)
 
 def rename_data(rootdir):
@@ -19,7 +19,7 @@ def rename_data(rootdir):
                 shutil.move(os.path.join(rootdir, subdir, file), os.path.join(rootdir, subdir, new))
 
 
-def create_spectrogram(file):
+def create_spectrogram(file, out_path):
     # load audio file with Librosa
     signal, sample_rate = librosa.load(file, sr=22050)
 
@@ -30,7 +30,6 @@ def create_spectrogram(file):
     plt.xlabel("Time (s)")
     plt.ylabel("Amplitude")
     plt.title("Waveform")
-
 
     # FFT -> power spectrum
     # perform Fourier transform
@@ -53,7 +52,6 @@ def create_spectrogram(file):
     plt.ylabel("Magnitude")
     plt.title("Power spectrum")
 
-
     # STFT -> spectrogram
     hop_length = 512 # in num. of samples
     n_fft = 2048 # window in num. of samples
@@ -62,54 +60,33 @@ def create_spectrogram(file):
     hop_length_duration = float(hop_length)/sample_rate
     n_fft_duration = float(n_fft)/sample_rate
 
-    print("STFT hop length duration is: {}s".format(hop_length_duration))
-    print("STFT window duration is: {}s".format(n_fft_duration))
-
     # perform stft
     stft = librosa.stft(signal, n_fft=n_fft, hop_length=hop_length)
 
     # calculate abs values on complex numbers to get magnitude
     spectrogram = np.abs(stft)
 
-    # display spectrogram
-    plt.figure(figsize=FIG_SIZE)
-    librosa.display.specshow(spectrogram, sr=sample_rate, hop_length=hop_length)
-    plt.xlabel("Time")
-    plt.ylabel("Frequency")
-    plt.colorbar()
-    plt.title("Spectrogram")
-
-    # apply logarithm to cast amplitude to Decibels
-    log_spectrogram = librosa.amplitude_to_db(spectrogram)
+    file_path = file.split("/")[-1][:-4]
     fig = plt.Figure()
+
+    # Save to DB Spectrogram
+    log_spectrogram = librosa.amplitude_to_db(spectrogram)
+    
     plt.figure(figsize=FIG_SIZE)
     librosa.display.specshow(log_spectrogram, sr=sample_rate, hop_length=hop_length)
+    plt.savefig("{}/db_spectro/{}".format(out_path, file_path))
 
-
-
-    exit(1)
-    plt.xlabel("Time")
-    plt.ylabel("Frequency")
-    plt.colorbar(format="%+2.0f dB")
-    plt.title("Spectrogram (dB)")
-
-    # MFCCs
-    # extract 13 MFCCs
+    # Save to MFCC
     MFCCs = librosa.feature.mfcc(y = signal, sr = sample_rate, n_fft=n_fft, hop_length=hop_length, n_mfcc=13)
-    # librosa.feature.mfcc(y=y, sr=sr)
-    # MFCCs = librosa.feature.mfcc(y=signal, sr=sample_rate)
-
-    # display MFCCs
     plt.figure(figsize=FIG_SIZE)
     librosa.display.specshow(MFCCs, sr=sample_rate, hop_length=hop_length)
-    plt.xlabel("Time")
-    plt.ylabel("MFCC coefficients")
-    plt.colorbar()
-    plt.title("MFCCs")
+    plt.savefig("{}/mfcc/{}".format(out_path, file_path))
 
-    # show plots
-    plt.show()
+    exit(1)
 
-file = root + '/data/cat/wav/1.wav'
-#rename_data(root)
-create_spectrogram(file)
+subdirs = next(os.walk(data_dir))[1]
+for sd in subdirs:
+    out_path = "{}/{}".format(data_dir, sd)
+
+    for file in os.listdir("{}/wav".format(out_path)):
+        create_spectrogram("{}/wav/{}".format(out_path, file), out_path)
