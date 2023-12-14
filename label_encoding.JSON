@@ -1,0 +1,12 @@
+{
+    "bird" : 0,
+    "cat": 1,
+    "chicken": 2,
+    "cow": 3,
+    "dog": 4, 
+    "donkey": 5,
+    "frog": 6,
+    "lion": 7,
+    "monkey": 8,
+    "sheep": 9
+}
