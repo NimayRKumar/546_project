@@ -7,6 +7,8 @@ import os
 import shutil
 import json
 from ast import literal_eval
+from audiomentations import AddGaussianNoise, AirAbsorption, ApplyImpulseResponse, BandPassFilter, GainTransition, \
+RepeatPart, TimeStretch, TanhDistortion
 
 with open("./data_dir_path.txt") as f:
     data_dir = f.read()
@@ -71,8 +73,86 @@ def create_spectrogram(file, out_path):
     librosa.display.specshow(MFCCs, sr=sample_rate, hop_length=hop_length)
     plt.savefig("{}/mfcc/{}".format(out_path, file_path))
 
+# Target length = 22050 * num_seconds
+def pad_or_trim_audio(signal, target_length):
+  # print(len(signal))
+  if len(signal) < target_length:
+    # print("padded")
+    signal = np.pad(signal, (0, target_length - len(signal)))
+  if len(signal) > target_length:
+    # print("trimmed")
+    signal = signal[:target_length]
+  return signal
 
-def main(): 
+
+def add_gaussian_noise(signal):
+    transform = AddGaussianNoise(
+        min_amplitude=0.001,
+        max_amplitude=0.015,
+        p=1.0
+    )
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+def add_air_absorption(signal):
+    transform = AirAbsorption(
+        min_distance=10.0,
+        max_distance=50.0,
+        p=1.0,
+    )
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+# maybe optional depending on whether we have impulse sound
+def add_impulse_response(signal):
+    transform = ApplyImpulseResponse(ir_path="/path/to/sound_folder", p=1.0)
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+def add_band_pass_filter(signal):
+    transform = BandPassFilter(min_center_freq=100.0, max_center_freq=6000, p=1.0)
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+def gain_transition(signal):
+    transform = GainTransition()
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+def repeat_part(signal):
+    transform = RepeatPart(mode="replace", p=1.0)
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+
+def time_stretch(signal):
+    transform = TimeStretch(
+        min_rate=0.8,
+        max_rate=1.25,
+        leave_length_unchanged=True,
+        p=1.0
+    )
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+def tanh_distortion(signal):
+    transform = TanhDistortion(
+        min_distortion=0.01,
+        max_distortion=0.7,
+        p=1.0
+    )
+    augmented_sound = transform(signal, sample_rate=22050)
+    return augmented_sound
+
+# aug_list = [add_gaussian_noise, add_air_absorption]
+def create_augmentations(df, aug_list):
+    for i in range(df.shape[0]):
+        for aug_fxn in aug_list:
+            sig = aug_fxn(df.iloc[i,0])
+            df.loc[len(df)] = [list(sig), df.iloc[i, 1]]
+    return df
+
+def create_signal_dataframe(): 
     df = pd.DataFrame(columns=["signal", "label"])
     subdirs = next(os.walk(data_dir))[1]
     for sd in subdirs:
@@ -80,13 +160,17 @@ def main():
 
         for file in os.listdir("{}/wav".format(out_path)):
             sig = create_spectrogram("{}/wav/{}".format(out_path, file), out_path)
+            sig = pad_or_trim_audio(sig, 22050 * 2)
             df.loc[len(df)] = [list(sig), label_encoding[sd]]
 
     df.to_csv('./csv/dataset.csv')
   
 
 if __name__=="__main__": 
-    main()
-    #df = pd.read_csv('./csv/dataset.csv')
-    #df['signal'] = df['signal'].apply(literal_eval)
+    if not os.path.isfile("./csv/dataset.csv"):
+        create_signal_dataframe()
+    df = pd.read_csv('./csv/dataset.csv')
+    df['signal'] = df['signal'].apply(literal_eval)
+    df['signal'] = df['signal'].apply(lambda x: np.array(x))
+    print(df.iloc[0])
 

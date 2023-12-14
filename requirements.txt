@@ -2,3 +2,4 @@ librosa
 numpy
 matplotlib
 pandas
+audiomentations==0.20.0
