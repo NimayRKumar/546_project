@@ -8,8 +8,9 @@ import shutil
 import json
 from ast import literal_eval
 
-#replace with your own if using absolute paths, or empty string if not
-data_dir = '/Users/nimay/Desktop/repos/in_the_jungle/data'
+with open("./data_dir_path.txt") as f:
+    data_dir = f.read()
+
 label_encoding = json.load(open('./label_encoding.JSON'))
 FIG_SIZE = (15,10)
 
