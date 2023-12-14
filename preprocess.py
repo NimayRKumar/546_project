@@ -7,8 +7,7 @@ import os
 import shutil
 import json
 from ast import literal_eval
-from audiomentations import AddGaussianNoise, AirAbsorption, ApplyImpulseResponse, BandPassFilter, GainTransition, \
-RepeatPart, TimeStretch, TanhDistortion
+from audiomentations import AddGaussianNoise, AirAbsorption, ApplyImpulseResponse, BandPassFilter, GainTransition, RepeatPart, TimeStretch, TanhDistortion
 
 with open("./data_dir_path.txt") as f:
     data_dir = f.read()
@@ -144,7 +143,6 @@ def tanh_distortion(signal):
     augmented_sound = transform(signal, sample_rate=22050)
     return augmented_sound
 
-# aug_list = [add_gaussian_noise, add_air_absorption]
 def create_augmentations(df, aug_list):
     for i in range(df.shape[0]):
         for aug_fxn in aug_list:
@@ -161,16 +159,15 @@ def create_signal_dataframe():
         for file in os.listdir("{}/wav".format(out_path)):
             sig = create_spectrogram("{}/wav/{}".format(out_path, file), out_path)
             sig = pad_or_trim_audio(sig, 22050 * 2)
-            df.loc[len(df)] = [list(sig), label_encoding[sd]]
+            df.loc[len(df)] = [sig, label_encoding[sd]]
 
-    df.to_csv('./csv/dataset.csv')
+    # df.to_csv('./csv/dataset.csv')
+    return df
   
 
 if __name__=="__main__": 
-    if not os.path.isfile("./csv/dataset.csv"):
-        create_signal_dataframe()
-    df = pd.read_csv('./csv/dataset.csv')
-    df['signal'] = df['signal'].apply(literal_eval)
-    df['signal'] = df['signal'].apply(lambda x: np.array(x))
-    print(df.iloc[0])
+    df = create_signal_dataframe()
+    aug_list = [add_gaussian_noise, add_air_absorption]
+    df = create_augmentations(df, aug_list)
+    print(df.iloc[2624])
 
