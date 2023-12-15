@@ -1,3 +1,3 @@
 # 546_project
 
-To create dataset: change the data_dir path in preprocess.py, create a csv folder, then run
+To create dataset: create a data_dir_path.txt with path to your data directory, create a csv folder, then run
