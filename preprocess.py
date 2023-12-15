@@ -8,6 +8,7 @@ import shutil
 import json
 from ast import literal_eval
 from audiomentations import AddGaussianNoise, AirAbsorption, ApplyImpulseResponse, BandPassFilter, GainTransition, RepeatPart, TimeStretch, TanhDistortion
+from sklearn.model_selection import train_test_split
 
 with open("./data_dir_path.txt") as f:
     data_dir = f.read()
@@ -24,7 +25,7 @@ def rename_data(rootdir):
 
 # Pandas df: one column for signal, one for label
 # TODO: save padded signal
-def create_spectrogram(file, out_path):
+def create_signal(file, out_path):
     file_path = file.split("/")[-1][:-4]
     fig = plt.Figure()
 
@@ -157,17 +158,34 @@ def create_signal_dataframe():
         out_path = "{}/{}".format(data_dir, sd)
 
         for file in os.listdir("{}/wav".format(out_path)):
-            sig = create_spectrogram("{}/wav/{}".format(out_path, file), out_path)
+            sig = create_signal("{}/wav/{}".format(out_path, file), out_path)
             sig = pad_or_trim_audio(sig, 22050 * 2)
             df.loc[len(df)] = [sig, label_encoding[sd]]
 
     # df.to_csv('./csv/dataset.csv')
     return df
-  
+
+def get_spectrogram(signal, hop_length=512, n_fft=2048):
+  stft = librosa.stft(signal, n_fft=n_fft, hop_length=hop_length)
+  spectrogram = np.abs(stft)
+  return librosa.amplitude_to_db(spectrogram)
+
+def get_mfcc(signal, n_mfcc=13):
+    return librosa.feature.mfcc(y=signal, n_mfcc=n_mfcc)
 
 if __name__=="__main__": 
     df = create_signal_dataframe()
-    aug_list = [add_gaussian_noise, add_air_absorption]
-    df = create_augmentations(df, aug_list)
-    print(df.iloc[2624])
+    # aug_list = [add_gaussian_noise, add_air_absorption]
+    # df = create_augmentations(df, aug_list)
+    # data = df["signal"].to_numpy() # 875 x 44100
+    signal = np.vstack(df["signal"])
+    label = np.array(df["label"])
+    x_train, x_test, y_train, y_test = train_test_split(signal, label, test_size=0.2)
+    print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
+
+    spectrogram_train = get_spectrogram(x_train)
+    print(spectrogram_train.shape)
+
+    mfcc_train = get_mfcc(x_train)
+    print(mfcc_train.shape)
 
