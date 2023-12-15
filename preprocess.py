@@ -170,4 +170,3 @@ if __name__=="__main__":
     aug_list = [add_gaussian_noise, add_air_absorption]
     df = create_augmentations(df, aug_list)
     print(df.iloc[2624])
-
