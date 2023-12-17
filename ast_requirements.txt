@@ -1,0 +1,13 @@
+llvmlite
+
+matplotlib==3.4.2
+numba
+numpy
+scikit-learn
+scipy
+timm==0.4.5
+torch
+torchaudio
+torchvision
+wget
+zipp
