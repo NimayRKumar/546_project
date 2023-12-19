@@ -16,26 +16,12 @@ with open("./data_dir_path.txt") as f:
 label_encoding = json.load(open('./label_encoding.JSON'))
 FIG_SIZE = (15,10)
 
-def rename_data(rootdir):
-    for subdir, dirs, files in os.walk(rootdir):
-        for file in files:
-            if file.endswith('.wav') or file.endswith('.WAV'):
-                new = file.split('_')[1]
-                shutil.move(os.path.join(rootdir, subdir, file), os.path.join(rootdir, subdir, new))
-
-# Pandas df: one column for signal, one for label
-# TODO: save padded signal
-def create_signal(file, out_path):
-    file_path = file.split("/")[-1][:-4]
-    fig = plt.Figure()
-
-    # load audio file with Librosa
+def plot_signal(file):
     signal, sample_rate = librosa.load(file, sr=22050)
-    return signal
 
     plt.figure(figsize=FIG_SIZE)
     librosa.display.waveshow(signal, sr=sample_rate, color="blue")
-    plt.savefig("{}/signal/{}".format(out_path, file_path))
+    plt.show()
 
     # FFT -> power spectrum
     fft = np.fft.fft(signal)
@@ -65,13 +51,31 @@ def create_signal(file, out_path):
     
     plt.figure(figsize=FIG_SIZE)
     librosa.display.specshow(log_spectrogram, sr=sample_rate, hop_length=hop_length)
-    plt.savefig("{}/db_spectro/{}".format(out_path, file_path))
+    plt.show()
 
     # Save to MFCC
     MFCCs = librosa.feature.mfcc(y = signal, sr = sample_rate, n_fft=n_fft, hop_length=hop_length, n_mfcc=13)
     plt.figure(figsize=FIG_SIZE)
     librosa.display.specshow(MFCCs, sr=sample_rate, hop_length=hop_length)
-    plt.savefig("{}/mfcc/{}".format(out_path, file_path))
+    plt.show()
+
+
+def rename_data(rootdir):
+    for subdir, dirs, files in os.walk(rootdir):
+        for file in files:
+            if file.endswith('.wav') or file.endswith('.WAV'):
+                new = file.split('_')[1]
+                shutil.move(os.path.join(rootdir, subdir, file), os.path.join(rootdir, subdir, new))
+
+
+def create_signal(file, out_path):
+    file_path = file.split("/")[-1][:-4]
+    fig = plt.Figure()
+
+    # load audio file with Librosa
+    signal, sample_rate = librosa.load(file, sr=22050)
+    return signal
+
 
 # Target length = 22050 * num_seconds
 def pad_or_trim_audio(signal, target_length):
@@ -103,21 +107,18 @@ def add_air_absorption(signal):
     augmented_sound = transform(signal, sample_rate=22050)
     return augmented_sound
 
-# maybe optional depending on whether we have impulse sound
-def add_impulse_response(signal):
-    transform = ApplyImpulseResponse(ir_path="/path/to/sound_folder", p=1.0)
-    augmented_sound = transform(signal, sample_rate=22050)
-    return augmented_sound
 
 def add_band_pass_filter(signal):
     transform = BandPassFilter(min_center_freq=100.0, max_center_freq=6000, p=1.0)
     augmented_sound = transform(signal, sample_rate=22050)
     return augmented_sound
 
+
 def gain_transition(signal):
     transform = GainTransition()
     augmented_sound = transform(signal, sample_rate=22050)
     return augmented_sound
+
 
 def repeat_part(signal):
     transform = RepeatPart(mode="replace", p=1.0)
@@ -188,4 +189,3 @@ if __name__=="__main__":
 
     mfcc_train = get_mfcc(x_train)
     print(mfcc_train.shape)
-
