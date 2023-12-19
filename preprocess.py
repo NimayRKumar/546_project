@@ -160,7 +160,7 @@ def augment_data(data, labels, aug_list):
             x_aug = aug_fxn(x)
             aug_data.append(list(x_aug))
             
-    return [*data, *aug_data], aug_labels
+    return np.array([*data, *aug_data]), np.array(aug_labels)
 
 def create_signal_dataframe(): 
     df = pd.DataFrame(columns=["signal", "label"])
