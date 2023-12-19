@@ -152,6 +152,16 @@ def create_augmentations(df, aug_list):
             df.loc[len(df)] = [list(sig), df.iloc[i, 1]]
     return df
 
+def augment_data(data, labels, aug_list):
+    aug_data = []
+    aug_labels = [*labels, *labels]
+    for x, y in zip(data, labels):
+        for aug_fxn in aug_list:
+            x_aug = aug_fxn(x)
+            aug_data.append(list(x_aug))
+            
+    return aug_data, aug_labels
+
 def create_signal_dataframe(): 
     df = pd.DataFrame(columns=["signal", "label"])
     subdirs = next(os.walk(data_dir))[1]
